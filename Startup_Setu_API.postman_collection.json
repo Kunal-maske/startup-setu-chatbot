@@ -1,0 +1,100 @@
+{
+  "info": {
+    "name": "Startup Setu API",
+    "description": "Test collection for Startup Setu backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["health"]
+        },
+        "description": "Check if the server is running"
+      },
+      "response": []
+    },
+    {
+      "name": "Chat - Business Blueprinting Agent (Free)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"user_123\",\n  \"session_id\": \"session_456\",\n  \"message\": \"I want to build a SaaS product for small businesses. It will help them manage their inventory\",\n  \"preferred_agent\": \"Business Blueprinting Agent\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "chat"]
+        },
+        "description": "Test the free Business Blueprinting Agent - helps validate startup ideas"
+      },
+      "response": []
+    },
+    {
+      "name": "Chat - Business Support Services Agent (Paid)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"user_123\",\n  \"session_id\": \"session_456\",\n  \"message\": \"I'm ready to register my company. What are the steps?\",\n  \"preferred_agent\": \"Business Support Services Agent\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "chat"]
+        },
+        "description": "Test the paid Business Support Services Agent - locked by default, returns upgrade_required: true"
+      },
+      "response": []
+    },
+    {
+      "name": "Chat - Memory Test (Update Startup Info)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"user_123\",\n  \"session_id\": \"session_456\",\n  \"message\": \"My idea: AI-powered fitness coaching. Stage: MVP. Industry: Health Tech. Problem: People don't have access to personalized fitness coaches. Solution: An AI app that creates custom workout plans.\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/chat",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "chat"]
+        },
+        "description": "Test memory extraction - send startup info and it will be stored automatically"
+      },
+      "response": []
+    }
+  ]
+}

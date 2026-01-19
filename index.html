@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Startup Setu - AI Agent</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#667eea" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #f5f5f5;
+        min-height: 100vh;
+        display: flex;
+      }
+
+      .main-container {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        gap: 0;
+      }
+
+      .sidebar {
+        width: 280px;
+        background: white;
+        border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .sidebar-header h1 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+      }
+
+      .sidebar-header p {
+        font-size: 12px;
+        color: #999;
+      }
+
+      .agents-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+      }
+
+      .agent-item {
+        padding: 14px 12px;
+        margin-bottom: 8px;
+        background: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+      }
+
+      .agent-item:hover {
+        background: #f0f0f0;
+        border-color: #ddd;
+      }
+
+      .agent-item.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+        border-left-color: white;
+      }
+
+      .agent-name {
+        font-weight: 500;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+
+      .agent-badge-small {
+        display: inline-block;
+        background: rgba(0, 0, 0, 0.1);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+      }
+
+      .agent-item.active .agent-badge-small {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .chat-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: white;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 16px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .header h2 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .header p {
+        font-size: 12px;
+        opacity: 0.9;
+      }
+
+      .agent-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        margin-top: 6px;
+      }
+
+      .chat-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: #fafafa;
+      }
+
+      .message {
+        display: flex;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message.user {
+        justify-content: flex-end;
+      }
+
+      .message.ai {
+        justify-content: flex-start;
+      }
+
+      .message-content {
+        max-width: 70%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        word-wrap: break-word;
+        line-height: 1.4;
+        font-size: 14px;
+      }
+
+      .message.user .message-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom-right-radius: 4px;
+      }
+
+      .message.ai .message-content {
+        background: #f0f0f0;
+        color: #333;
+        border-bottom-left-radius: 4px;
+      }
+
+      .loading {
+        display: flex;
+        gap: 4px;
+        padding: 12px 16px;
+      }
+
+      .loading-dot {
+        width: 8px;
+        height: 8px;
+        background: #667eea;
+        border-radius: 50%;
+        animation: bounce 1.4s infinite;
+      }
+
+      .loading-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .loading-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes bounce {
+        0%,
+        80%,
+        100% {
+          opacity: 0.3;
+          transform: translateY(0);
+        }
+        40% {
+          opacity: 1;
+          transform: translateY(-8px);
+        }
+      }
+
+      .input-area {
+        padding: 16px 24px;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        gap: 8px;
+        background: white;
+      }
+
+      .input-field {
+        flex: 1;
+        padding: 12px 16px;
+        border: 1px solid #ddd;
+        border-radius: 24px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+        font-family: inherit;
+      }
+
+      .input-field:focus {
+        border-color: #667eea;
+      }
+
+      .send-btn {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .send-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .send-btn:active {
+        transform: scale(0.95);
+      }
+
+      .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 13px;
+      }
+
+      .upgrade-required {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        color: #856404;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 13px;
+      }
+
+      .info-text {
+        text-align: center;
+        color: #999;
+        font-size: 12px;
+        margin-top: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 200px;
+        }
+
+        .message-content {
+          max-width: 85%;
+        }
+
+        .header h2 {
+          font-size: 16px;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .main-container {
+          flex-direction: column;
+        }
+
+        .sidebar {
+          width: 100%;
+          height: 120px;
+          border-right: none;
+          border-bottom: 1px solid #e0e0e0;
+        }
+
+        .agents-list {
+          display: flex;
+          overflow-x: auto;
+          padding: 8px;
+          gap: 8px;
+        }
+
+        .agent-item {
+          min-width: 150px;
+          margin-bottom: 0;
+        }
+      }
+
+      /* Login Modal Styles */
+      .login-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .login-modal.hidden {
+        display: none;
+      }
+
+      .login-card {
+        background: white;
+        border-radius: 12px;
+        padding: 40px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .login-card h2 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #333;
+      }
+
+      .login-card p {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 6px;
+        color: #333;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .form-group input:focus {
+        border-color: #667eea;
+      }
+
+      .login-btn {
+        width: 100%;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+        margin-top: 8px;
+      }
+
+      .login-btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .login-btn:active {
+        transform: translateY(0);
+      }
+
+      .login-btn.loading {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
+      .user-info {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 12px;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .logout-btn {
+        padding: 6px 12px;
+        background: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .logout-btn:hover {
+        background: #e0e0e0;
+      }
+
+      .login-error {
+        color: #d32f2f;
+        font-size: 12px;
+        margin-top: 8px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Login Modal -->
+    <div class="login-modal" id="loginModal">
+      <div class="login-card">
+        <h2>Welcome to Startup Setu</h2>
+        <p>Sign in with your email to continue</p>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="emailInput">Email Address</label>
+            <input
+              type="email"
+              id="emailInput"
+              placeholder="your@email.com"
+              required
+            />
+          </div>
+          <button type="submit" class="login-btn" id="loginBtn">Sign In</button>
+          <div class="login-error" id="loginError"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- User Info (top right) -->
+    <div class="user-info" id="userInfo" style="display: none">
+      <span id="userEmail"></span>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="main-container">
+      <!-- Left Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <h1>Startup Setu</h1>
+          <p>Select an Agent</p>
+        </div>
+        <div class="agents-list" id="agentsList">
+          <!-- Agents will be populated here -->
+        </div>
+      </div>
+
+      <!-- Right Chat Panel -->
+      <div class="chat-wrapper">
+        <div class="header">
+          <h2 id="currentAgentName">Business Blueprinting Agent</h2>
+          <p id="currentAgentDesc">Help validate and structure startup ideas</p>
+          <div class="agent-badge" id="agentBadge">Free</div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+          <div style="text-align: center; color: #999; padding: 20px">
+            <p style="font-size: 14px; margin-bottom: 10px">
+              👋 Welcome to Startup Setu!
+            </p>
+            <p style="font-size: 12px">
+              Select an agent and start typing your startup idea.
+            </p>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <input
+            type="text"
+            id="messageInput"
+            class="input-field"
+            placeholder="Describe your startup idea..."
+            autocomplete="off"
+          />
+          <button class="send-btn" id="sendBtn" title="Send message">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Auth State
+      let currentUser = null;
+      let userSubscriptions = {};
+
+      const loginModal = document.getElementById("loginModal");
+      const loginForm = document.getElementById("loginForm");
+      const emailInput = document.getElementById("emailInput");
+      const loginBtn = document.getElementById("loginBtn");
+      const loginError = document.getElementById("loginError");
+      const userInfo = document.getElementById("userInfo");
+      const userEmail = document.getElementById("userEmail");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      // Initialize auth
+      function initAuth() {
+        const savedUser = localStorage.getItem("currentUser");
+        const savedSubscriptions = localStorage.getItem("userSubscriptions");
+
+        if (savedUser) {
+          currentUser = JSON.parse(savedUser);
+          userSubscriptions = savedSubscriptions
+            ? JSON.parse(savedSubscriptions)
+            : {};
+          showMainApp();
+        } else {
+          showLoginModal();
+        }
+      }
+
+      function showLoginModal() {
+        loginModal.classList.remove("hidden");
+        mainContainer.style.display = "none";
+        emailInput.focus();
+      }
+
+      function showMainApp() {
+        loginModal.classList.add("hidden");
+        mainContainer.style.display = "flex";
+        userInfo.style.display = "flex";
+        userEmail.textContent = currentUser.email;
+        
+        // Initialize UI when showing main app
+        renderAgents();
+        loadChat();
+        messageInput.focus();
+      }
+
+      // Handle login
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = emailInput.value.trim();
+
+        if (!email) {
+          loginError.textContent = "Please enter your email";
+          return;
+        }
+
+        loginBtn.classList.add("loading");
+        loginBtn.disabled = true;
+
+        try {
+          const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Login failed");
+          }
+
+          currentUser = { email, id: data.userId };
+          userSubscriptions = data.subscriptions || {};
+
+          console.log("Login successful:", { currentUser, userSubscriptions });
+
+          localStorage.setItem("currentUser", JSON.stringify(currentUser));
+          localStorage.setItem(
+            "userSubscriptions",
+            JSON.stringify(userSubscriptions)
+          );
+
+          loginError.textContent = "";
+          emailInput.value = "";
+          showMainApp();
+        } catch (error) {
+          console.error("Login error:", error);
+          loginError.textContent =
+            error.message || "Login failed. Please try again.";
+        } finally {
+          loginBtn.classList.remove("loading");
+          loginBtn.disabled = false;
+        }
+      });
+
+      // Handle logout
+      logoutBtn.addEventListener("click", () => {
+        currentUser = null;
+        userSubscriptions = {};
+        localStorage.removeItem("currentUser");
+        localStorage.removeItem("userSubscriptions");
+        loginForm.reset();
+        showLoginModal();
+      });
+
+      const chatContainer = document.getElementById("chatContainer");
+      const messageInput = document.getElementById("messageInput");
+      const sendBtn = document.getElementById("sendBtn");
+      const agentsList = document.getElementById("agentsList");
+      const currentAgentName = document.getElementById("currentAgentName");
+      const currentAgentDesc = document.getElementById("currentAgentDesc");
+      const agentBadge = document.getElementById("agentBadge");
+
+      // Agent definitions
+      const agents = [
+        {
+          id: "business-blueprinting",
+          name: "Business Blueprinting Agent",
+          description: "Validate and structure startup ideas",
+          type: "free",
+          badge: "Free",
+        },
+        {
+          id: "support",
+          name: "Business Support Services Agent",
+          description: "Company registration, GST, bank setup",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "legal",
+          name: "Business Legal Solutions Agent",
+          description: "Legal advice, contracts, compliance",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "hr",
+          name: "HR Solutions Agent",
+          description: "HR policies, recruitment, employee management",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "funding",
+          name: "Funding & Loans Agent",
+          description:
+            "Fundraising strategies, loan options, investor relations",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "finance",
+          name: "Finance Consultation Agent",
+          description: "Financial planning, budgeting, cash flow management",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "accounting",
+          name: "Account Management Agent",
+          description: "Bookkeeping, invoicing, financial records",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "audit",
+          name: "Auditors & Compliance Agent",
+          description: "Audit management, compliance, risk assessment",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "product",
+          name: "Product Development Agent",
+          description: "Product strategy, development roadmap, market fit",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "branding",
+          name: "Branding & Creatives Agent",
+          description: "Brand strategy, logo design, marketing materials",
+          type: "paid",
+          badge: "Paid",
+        },
+        {
+          id: "marketing",
+          name: "AI Digital Marketing Agent",
+          description: "Digital marketing strategy, SEO, social media, content",
+          type: "paid",
+          badge: "Paid",
+        },
+      ];
+
+      // Generate simple user ID (use test user from database)
+      const userId = "user_123";
+      const sessionId = "session_" + Date.now();
+
+      let currentAgent = agents[0];
+
+      // Chat history management (per-user, per-agent)
+      function saveChat(agentId, message, sender, reply = null) {
+        const key = `chat_${currentUser.id}_${agentId}`;
+        let chatHistory = JSON.parse(localStorage.getItem(key) || "[]");
+        chatHistory.push({
+          sender,
+          message,
+          reply,
+          timestamp: new Date().toISOString(),
+        });
+        localStorage.setItem(key, JSON.stringify(chatHistory));
+      }
+
+      function loadChatHistory(agentId) {
+        const key = `chat_${currentUser.id}_${agentId}`;
+        return JSON.parse(localStorage.getItem(key) || "[]");
+      }
+
+      function clearChatHistory(agentId) {
+        const key = `chat_${currentUser.id}_${agentId}`;
+        localStorage.removeItem(key);
+      }
+
+      // Render agents list
+      function renderAgents() {
+        console.log("Rendering agents with subscriptions:", userSubscriptions);
+        agentsList.innerHTML = "";
+        agents.forEach((agent) => {
+          const agentEl = document.createElement("div");
+          const isPaid = agent.id !== "business-blueprinting";
+          
+          // FREE agent should ALWAYS be accessible
+          let hasAccess = isPaid ? (userSubscriptions[agent.id] === true) : true;
+          
+          const isActive = agent.id === currentAgent.id;
+
+          console.log(`Agent ${agent.id}: isPaid=${isPaid}, hasAccess=${hasAccess}, subscription=${userSubscriptions[agent.id]}`);
+
+          agentEl.className = `agent-item ${isActive ? "active" : ""} ${
+            !hasAccess ? "locked" : ""
+          }`;
+
+          const badgeText = isPaid
+            ? hasAccess
+              ? "Premium"
+              : "🔒 Locked"
+            : "Free";
+          const badgeColor = isPaid
+            ? hasAccess
+              ? "#667eea"
+              : "#999"
+            : "#4caf50";
+
+          agentEl.innerHTML = `
+                    <div class="agent-name">${agent.name}</div>
+                    <div style="font-size: 11px; color: ${
+                      isActive ? "rgba(255,255,255,0.7)" : "#666"
+                    }; margin-bottom: 6px;">
+                        ${agent.description}
+                    </div>
+                    <span class="agent-badge-small" style="background: ${badgeColor}; color: white;">${badgeText}</span>
+                `;
+
+          if (!hasAccess) {
+            agentEl.style.opacity = "0.6";
+            agentEl.style.cursor = "not-allowed";
+            agentEl.addEventListener("click", () => {
+              alert(
+                "This agent is available for premium members. Subscribe to unlock!"
+              );
+            });
+          } else {
+            agentEl.addEventListener("click", () => switchAgent(agent));
+          }
+
+          agentsList.appendChild(agentEl);
+        });
+      }
+
+      // Switch agent
+      function switchAgent(agent) {
+        currentAgent = agent;
+        updateHeader();
+        renderAgents();
+        loadChat();
+      }
+
+      // Load and display chat history
+      function loadChat() {
+        const history = loadChatHistory(currentAgent.id);
+        chatContainer.innerHTML = "";
+
+        if (history.length === 0) {
+          chatContainer.innerHTML = `
+            <div style="text-align: center; color: #999; padding: 20px;">
+              <p style="font-size: 14px; margin-bottom: 10px;">👋 Agent switched!</p>
+              <p style="font-size: 12px;">Now chatting with ${currentAgent.name}</p>
+              <p style="font-size: 11px; margin-top: 12px; color: #bbb;">No previous chats. Start typing below!</p>
+            </div>
+          `;
+        } else {
+          history.forEach((item) => {
+            addMessage(item.message, item.sender);
+            if (item.reply) {
+              addMessage(item.reply, "ai");
+            }
+          });
+          scrollToBottom();
+        }
+      }
+
+      // Send message
+      async function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        // Add user message to chat
+        addMessage(message, "user");
+        messageInput.value = "";
+        sendBtn.disabled = true;
+
+        // Show loading indicator
+        const loadingEl = document.createElement("div");
+        loadingEl.className = "message ai";
+        loadingEl.innerHTML = `
+                <div style="background: #f0f0f0; padding: 12px 16px; border-radius: 12px; border-bottom-left-radius: 4px;">
+                    <div class="loading">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                </div>
+            `;
+        chatContainer.appendChild(loadingEl);
+        scrollToBottom();
+
+        try {
+          // Call backend API with user ID from auth
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              user_id: currentUser.id,
+              session_id: sessionId,
+              message: message,
+              preferred_agent: currentAgent.id,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          // Remove loading indicator
+          loadingEl.remove();
+
+          // Show upgrade message if needed
+          if (data.upgrade_required) {
+            const upgradeEl = document.createElement("div");
+            upgradeEl.className = "upgrade-required";
+            upgradeEl.innerHTML = `<strong>⭐ Upgrade Required:</strong> ${data.reply}`;
+            chatContainer.appendChild(upgradeEl);
+            saveChat(currentAgent.id, message, "user", data.reply);
+          } else {
+            addMessage(data.reply, "ai");
+            saveChat(currentAgent.id, message, "user", data.reply);
+          }
+        } catch (error) {
+          loadingEl.remove();
+          const errorEl = document.createElement("div");
+          errorEl.className = "error-message";
+          errorEl.textContent = `❌ Error: ${error.message}. Make sure backend is running on localhost:3000`;
+          chatContainer.appendChild(errorEl);
+          console.error("Error:", error);
+        }
+
+        scrollToBottom();
+        sendBtn.disabled = false;
+        messageInput.focus();
+      }
+
+      function addMessage(text, sender) {
+        const msgEl = document.createElement("div");
+        msgEl.className = `message ${sender}`;
+
+        const contentEl = document.createElement("div");
+        contentEl.className = "message-content";
+        contentEl.textContent = text;
+
+        msgEl.appendChild(contentEl);
+        chatContainer.appendChild(msgEl);
+      }
+
+      function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      // Event listeners
+      sendBtn.addEventListener("click", sendMessage);
+      messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Initialize
+      const mainContainer = document.querySelector(".main-container");
+      initAuth();
+
+      // Register service worker for PWA
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/service-worker.js")
+            .then((reg) => {
+              console.log("ServiceWorker registered:", reg.scope);
+            })
+            .catch((err) => {
+              console.warn("ServiceWorker registration failed:", err);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
