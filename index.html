@@ -467,14 +467,29 @@
         margin-top: 8px;
         text-align: center;
       }
+
+      .toggle-btn {
+        background: none;
+        border: none;
+        color: #667eea;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: underline;
+        padding: 0;
+      }
+
+      .toggle-btn:hover {
+        color: #764ba2;
+      }
     </style>
   </head>
   <body>
     <!-- Login Modal -->
     <div class="login-modal" id="loginModal">
       <div class="login-card">
-        <h2>Welcome to Startup Setu</h2>
-        <p>Sign in with your email to continue</p>
+        <h2 id="loginTitle">Welcome to Startup Setu</h2>
+        <p id="loginSubtitle">Sign in with your email and password</p>
         <form id="loginForm">
           <div class="form-group">
             <label for="emailInput">Email Address</label>
@@ -485,8 +500,21 @@
               required
             />
           </div>
+          <div class="form-group">
+            <label for="passwordInput">Password</label>
+            <input
+              type="password"
+              id="passwordInput"
+              placeholder="At least 6 characters"
+              required
+            />
+          </div>
           <button type="submit" class="login-btn" id="loginBtn">Sign In</button>
           <div class="login-error" id="loginError"></div>
+          <div style="text-align: center; margin-top: 16px; font-size: 12px;">
+            <span id="toggleText">Don't have an account? </span>
+            <button type="button" id="toggleSignupBtn" class="toggle-btn">Sign Up</button>
+          </div>
         </form>
       </div>
     </div>
@@ -589,13 +617,63 @@
         messageInput.focus();
       }
 
-      // Handle login
+      // Toggle signup/login mode
+      let isSignupMode = false;
+
+      if (toggleSignupBtn) {
+        toggleSignupBtn.addEventListener("click", () => {
+          isSignupMode = !isSignupMode;
+          const title = loginTitle;
+          const subtitle = loginSubtitle;
+          const toggleText = document.querySelector(".toggle-text");
+
+          if (isSignupMode) {
+            title.textContent = "Create Account";
+            subtitle.textContent = "Set up your password to get started";
+            loginBtn.textContent = "Sign Up";
+            if (toggleText) {
+              toggleText.innerHTML =
+                'Already have an account? <button type="button" class="toggle-btn">Sign In</button>';
+            }
+          } else {
+            title.textContent = "Welcome Back";
+            subtitle.textContent = "Sign in with your email and password";
+            loginBtn.textContent = "Sign In";
+            if (toggleText) {
+              toggleText.innerHTML =
+                "Don't have an account? <button type=\"button\" class=\"toggle-btn\">Sign Up</button>";
+            }
+          }
+
+          // Re-attach event listener to new toggle button
+          const newToggleBtn = document.querySelector(".toggle-btn");
+          if (newToggleBtn) {
+            newToggleBtn.addEventListener("click", (e) => {
+              e.preventDefault();
+              toggleSignupBtn.click();
+            });
+          }
+        });
+      }
+
+      // Handle login/signup
       loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
 
         if (!email) {
           loginError.textContent = "Please enter your email";
+          return;
+        }
+
+        if (!password) {
+          loginError.textContent = "Please enter your password";
+          return;
+        }
+
+        if (password.length < 6) {
+          loginError.textContent = "Password must be at least 6 characters";
           return;
         }
 
@@ -606,19 +684,22 @@
           const response = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ email, password, isSignup: isSignupMode }),
           });
 
           const data = await response.json();
 
           if (!response.ok) {
-            throw new Error(data.error || "Login failed");
+            throw new Error(data.error || "Authentication failed");
           }
 
           currentUser = { email, id: data.userId };
           userSubscriptions = data.subscriptions || {};
 
-          console.log("Login successful:", { currentUser, userSubscriptions });
+          console.log("Authentication successful:", {
+            currentUser,
+            userSubscriptions,
+          });
 
           localStorage.setItem("currentUser", JSON.stringify(currentUser));
           localStorage.setItem(
@@ -628,6 +709,7 @@
 
           loginError.textContent = "";
           emailInput.value = "";
+          passwordInput.value = "";
           showMainApp();
         } catch (error) {
           console.error("Login error:", error);
@@ -832,9 +914,31 @@
         loadChat();
       }
 
-      // Load and display chat history
-      function loadChat() {
-        const history = loadChatHistory(currentAgent.id);
+      // Load and display chat history (from DB then localStorage fallback)
+      async function loadChat() {
+        let history = [];
+
+        // Try to fetch from database first
+        try {
+          const response = await fetch(
+            `/api/chat-history?user_id=${currentUser.id}&agent_id=${currentAgent.id}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            history = data.history || [];
+            console.log(
+              `Loaded ${history.length} messages from DB for agent ${currentAgent.id}`
+            );
+          }
+        } catch (error) {
+          console.log("Failed to fetch from DB, falling back to localStorage");
+        }
+
+        // If DB is empty or failed, try localStorage
+        if (history.length === 0) {
+          history = loadChatHistory(currentAgent.id);
+        }
+
         chatContainer.innerHTML = "";
 
         if (history.length === 0) {
@@ -847,9 +951,9 @@
           `;
         } else {
           history.forEach((item) => {
-            addMessage(item.message, item.sender);
-            if (item.reply) {
-              addMessage(item.reply, "ai");
+            addMessage(item.message || item.user_message, "user");
+            if (item.reply || item.ai_reply) {
+              addMessage(item.reply || item.ai_reply, "ai");
             }
           });
           scrollToBottom();

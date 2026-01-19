@@ -185,4 +185,41 @@ router.post("/chat", async (req, res) => {
   }
 });
 
+// GET /api/chat-history - Fetch chat history for a user and agent
+router.get("/chat-history", async (req, res) => {
+  try {
+    const { user_id, agent_id } = req.query;
+
+    if (!user_id || !agent_id) {
+      return res.status(400).json({ error: "user_id and agent_id required" });
+    }
+
+    const { data, error } = await supabase
+      .from("chat_history")
+      .select("user_message, ai_reply, created_at")
+      .eq("user_id", user_id)
+      .eq("agent_name", agent_id)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("Error fetching chat history:", error.message);
+      return res.status(500).json({ error: "Failed to fetch history" });
+    }
+
+    // Format response to match frontend expectations
+    const history = (data || []).map((item) => ({
+      user_message: item.user_message,
+      ai_reply: item.ai_reply,
+      message: item.user_message,
+      reply: item.ai_reply,
+      timestamp: item.created_at,
+    }));
+
+    res.json({ history });
+  } catch (err) {
+    console.error("Error in /api/chat-history:", err);
+    return res.status(500).json({ error: "Failed to fetch chat history" });
+  }
+});
+
 export default router;
